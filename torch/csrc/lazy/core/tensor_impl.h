@@ -48,10 +48,11 @@ class TORCH_API LTCTensorImpl final : public c10::TensorImpl {
 
  private:
   void setup_size_properties();
+  void setup_sym_sizes() const;
 
   LazyTensorPtr tensor_;
-  std::vector<c10::SymInt> sym_sizes_;
-  size_t generation_ {0};
+  mutable c10::optional<std::vector<c10::SymInt>> sym_sizes_;
+  size_t generation_{0};
 };
 
 }  // namespace lazy

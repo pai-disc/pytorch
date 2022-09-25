@@ -827,6 +827,13 @@ inline DispatchKeySet getAutocastRelatedKeySetFromBackend(BackendComponent t) {
     case BackendComponent::CUDABit:
     case BackendComponent::XLABit:
       return autocast_cuda_ks;
+    case BackendComponent::LazyBit:
+      static bool env_use_cuda = std::getenv("LTC_TS_CUDA") != nullptr;
+      if (env_use_cuda) {
+        return autocast_cuda_ks;
+      } else {
+        return autocast_cpu_ks;
+      }
     default:
       return DispatchKeySet();
   }

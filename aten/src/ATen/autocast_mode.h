@@ -26,9 +26,13 @@ namespace {
   bool is_autocast_eligible(const Tensor& tensor, DeviceType device_type) {
     switch (device_type) {
       case DeviceType::CUDA:
-        return  (tensor.is_cuda() || tensor.is_xla()) && tensor.is_floating_point();
+        return (tensor.is_cuda() || tensor.is_xla() || tensor.is_lazy()) &&
+            tensor.is_floating_point();
+      case DeviceType::Lazy:
+        return  tensor.is_lazy() && tensor.is_floating_point();
       case DeviceType::CPU:
-        return (tensor.is_cpu() || tensor.is_mkldnn()) && tensor.is_floating_point();
+        return (tensor.is_cpu() || tensor.is_mkldnn() || tensor.is_lazy()) &&
+            tensor.is_floating_point();
       case DeviceType::XPU:
         return tensor.is_xpu() && tensor.is_floating_point();
       default:
@@ -42,6 +46,13 @@ inline DispatchKey get_autocast_dispatch_key_from_device_type(
   switch (device_type) {
     case DeviceType::CUDA:
       return DispatchKey::Autocast;
+    case DeviceType::Lazy:
+      static bool env_use_cuda = std::getenv("LTC_TS_CUDA") != nullptr;
+      if (env_use_cuda) {
+        return DispatchKey::Autocast;
+      } else {
+        return DispatchKey::AutocastCPU;
+      }
     case DeviceType::CPU:
       return DispatchKey::AutocastCPU;
     case DeviceType::XPU:
@@ -57,6 +68,13 @@ inline at::ScalarType get_lower_precision_fp_from_device_type(
   switch (device_type) {
     case DeviceType::CUDA:
       return get_autocast_gpu_dtype();
+    case DeviceType::Lazy:
+      static bool env_use_cuda = std::getenv("LTC_TS_CUDA") != nullptr;
+      if (env_use_cuda) {
+        return get_autocast_gpu_dtype();
+      } else {
+        return get_autocast_cpu_dtype();
+      }
     case DeviceType::CPU:
       return get_autocast_cpu_dtype();
     case DeviceType::XPU:
